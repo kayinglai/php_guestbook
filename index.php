@@ -2,7 +2,8 @@
 
 $name = '';
 $email = '';
-$messasge = '';
+$message = '';
+$readyToStore = false;
 
 if( $_SERVER['REQUEST_METHOD'] === "POST" &&
     isset($_POST['submit']) &&
@@ -12,10 +13,39 @@ if( $_SERVER['REQUEST_METHOD'] === "POST" &&
         
     $name = htmlspecialchars($_POST['name']);
     $email = htmlspecialchars($_POST['email']);
-    $messasge = htmlspecialchars($_POST['message']);
+    $message = htmlspecialchars($_POST['message']);
+
+    $readyToStore = true;
 }
 
-echo $name;
+
+if($readyToStore) {
+
+    $servername= "localhost";
+    $username= "root";
+    $password= "";
+    $dbname= "guestbook";
+
+    // Create connection
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    // Check connection
+    if($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+    
+    // Connected successfully, insert data
+    // TODO: show a nice message, in case a post with a non-unique email was submititted
+    
+    $sql = "INSERT INTO posts (name, email, message) VALUES ('$name', '$email', '$message')";
+    
+    if($conn->query($sql) === TRUE) {
+        echo "Thank you! Your message was stored in the database :)";
+    } else{
+        echo "Error: " . $sql. "<br>" . $conn->error;
+    }   
+
+}
 
 
 
