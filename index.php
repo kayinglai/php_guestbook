@@ -1,327 +1,244 @@
-<?php
-
-$name = '';
-$email = '';
-$message = '';
-$readyToStore = false;
-
-function connectToDB() {
-    // Create connection
-    $conn = new mysqli("localhost", "root", "", "guestbook");
-
-    // Check connection
-    if($conn->connect_error) {
-        return false;
-        die("Connection failed: " . $conn->connect_error);
-    }
-
-    return $conn;
-}
-
-$conn = connectToDB();
-
-
-/*
-    STORING A GUESTBOOK ENTRY
-
-    Get input via POST
-    and prepare for Database
-*/
-
-if( $_SERVER['REQUEST_METHOD'] === "POST" &&
-    isset($_POST['submit']) &&
-    isset($_POST['name']) &&
-    isset($_POST['email']) &&
-    isset($_POST['message']) ) {
-        
-    $name = htmlspecialchars($_POST['name']);
-    $email = htmlspecialchars($_POST['email']);
-    $message = htmlspecialchars($_POST['message']);
-
-    $readyToStore = true;
-}
-
-
-/*
-    Once the input (name, message, email) is ready
-    we connect and store the data
-*/
-
-if($readyToStore && $conn) {
-    
-    // Connected successfully, insert data
-    // TODO: show a nice message, in case a post with a non-unique email was submititted
-    
-    $sql = "INSERT INTO posts (name, email, message) VALUES ('$name', '$email', '$message')";
-    
-    if($conn->query($sql) === TRUE) {
-        echo "Thank you! Your message was stored in the database :)";
-    } else{
-        echo "Error: " . $sql. "<br>" . $conn->error;
-    }   
-
-}
-
-
-/*
-    READING THE DATA
-
-    Get the the guestbook entries from the database
-    and prepare them as HTML
-*/
-    
-    if($conn) {
-        // get the data
-        $sql = "SELECT * FROM posts ORDER BY created_at DESC";
-        $result = $conn->query($sql);
-        $posts = "";
-
-        if($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                $posts .= '<div class="entry">
-                    <div class="entry-header">
-                        <span class="entry-name">'.$row['name'].'</span>
-                        <span class="entry-date">'.date('d M Y', strtotime($row['created_at'])).'</span>
-                    </div>
-                    <p class="entry-message">'.$row['message'].'</p>
-                </div>';
-            }
-        } else{
-            echo "0 results";
-        }
-    }
-
-?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Awesome Guestbook</title>
+    <title>Modern Todo List</title>
     <style>
+        /* Reset and base styles */
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         body {
-            background: linear-gradient(to bottom, #000066, #000033);
-            color: white;
-            font-family: "Comic Sans MS", "Comic Sans", cursive;
             min-height: 100vh;
-            padding: 2rem;
+            background: linear-gradient(135deg, #f0f4ff 0%, #f5f7ff 100%);
+            padding: 2rem 1rem;
         }
 
+        /* Container styles */
         .container {
-            max-width: 1200px;
+            max-width: 42rem;
             margin: 0 auto;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-            background: #000080;
-            border: 4px solid white;
-            border-radius: 8px;
+        .todo-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             padding: 1.5rem;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        /* Header styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
         }
 
         .title {
-            font-size: 2.5rem;
-            color: #ffff00;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            margin-bottom: 1rem;
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #1f2937;
         }
 
-        .marquee {
-            color: #00ffff;
-            margin: 1rem 0;
+        .progress {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
         }
 
-        .content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            align-items: start;
+        .progress-icon {
+            color: #10b981;
+            width: 1.25rem;
+            height: 1.25rem;
         }
 
-        .form-container {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            padding: 1.5rem 1rem;
-            backdrop-filter: blur(10px);
-            height: fit-content;
-        }
-
-        .form-title {
-            color: #00ffff;
-            font-size: 1.5rem;
+        /* Form styles */
+        .todo-form {
             margin-bottom: 1.5rem;
-            text-align: center;
         }
 
-        .form-group {
-            margin-bottom: 1rem;
-            padding: 0 0.5rem;
-        }
-
-        label {
-            display: block;
-            color: #00ffff;
-            margin-bottom: 0.5rem;
-        }
-
-        input, textarea {
-            width: 100%;
-            padding: 0.5rem;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 4px;
-            color: white;
-            font-family: inherit;
-        }
-
-        textarea {
-            height: 100px;
-            resize: vertical;
-        }
-
-        .emoji-picker {
+        .input-group {
             display: flex;
             gap: 0.5rem;
-            margin: 1rem 0.5rem;
-            flex-wrap: wrap;
         }
 
-        .emoji {
-            font-size: 1.2rem;
+        .todo-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .todo-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .add-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
             cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .add-button:hover {
+            background-color: #2563eb;
+        }
+
+        /* Todo item styles */
+        .todo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: white;
+            border: 1px solid #f3f4f6;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .todo-item:hover {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .todo-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .checkbox {
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .checkbox.checked {
+            background-color: #10b981;
+            border-color: #10b981;
+            position: relative;
+        }
+
+        .checkbox.checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 0.75rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .todo-text {
+            color: #374151;
+        }
+
+        .todo-text.completed {
+            color: #9ca3af;
+            text-decoration: line-through;
+        }
+
+        .delete-button {
+            opacity: 0;
+            color: #ef4444;
             background: none;
             border: none;
-            color: white;
-            padding: 0.25rem;
-        }
-
-        .submit-btn {
-            width: calc(100% - 1rem);
-            margin: 0 0.5rem;
-            padding: 0.5rem;
-            background: linear-gradient(to right, #00ffff, #0066ff);
-            border: 2px solid white;
-            border-radius: 4px;
-            color: white;
-            font-weight: bold;
             cursor: pointer;
-            font-family: inherit;
+            padding: 0.25rem;
+            transition: all 0.2s;
         }
 
-        .entries-container {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            padding: 1.5rem;
-            backdrop-filter: blur(10px);
+        .todo-item:hover .delete-button {
+            opacity: 1;
         }
 
-        .entries-title {
-            color: #00ffff;
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .entry {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .entry-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-
-        .entry-name {
-            color: #ffff00;
-            font-weight: bold;
-        }
-
-        .entry-date {
-            color: #00ffff;
-            font-size: 0.8rem;
-        }
-
-        .entry-message {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 2rem;
-            color: #00ffff;
-            font-size: 0.9rem;
-        }
-
-        /* Add some retro decorations */
-        .star {
-            color: #ffff00;
+        .delete-button:hover {
+            color: #dc2626;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <h1 class="title"><span class="star">⭐</span> My Awesome Guestbook <span class="star">⭐</span></h1>
-            <marquee class="marquee">Welcome to my guestbook! • Please sign below! • Thanks for visiting! • Made with GeoCities • Best viewed in IE6 •</marquee>
-        </header>
-
-        <div class="content">
-            <div class="form-container">
-                <h2 class="form-title">✍️ Sign My Guestbook!</h2>
-                <form method="post">
-                    <div class="form-group">
-                        <label>Your Name:</label>
-                        <input type="text" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Your Email:</label>
-                        <input type="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Your Message:</label>
-                        <textarea name="message" required></textarea>
-                    </div>
-                    <div class="emoji-picker">
-                        <button type="button" class="emoji">😊</button>
-                        <button type="button" class="emoji">😂</button>
-                        <button type="button" class="emoji">❤️</button>
-                        <button type="button" class="emoji">👍</button>
-                        <button type="button" class="emoji">🌟</button>
-                        <button type="button" class="emoji">🎉</button>
-                        <button type="button" class="emoji">💖</button>
-                        <button type="button" class="emoji">✨</button>
-                    </div>
-                    <button name="submit" type="submit" class="submit-btn">Sign Guestbook!</button>
-                </form>
+        <div class="todo-card">
+            <div class="header">
+                <h1 class="title">My Tasks</h1>
+                <div class="progress">
+                    <svg class="progress-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>1/2 completed</span>
+                </div>
             </div>
 
-            <div class="entries-container">
-                <h2 class="entries-title">📝 Recent Visitors</h2>
-                <?= $posts ?>
+            <form class="todo-form">
+                <div class="input-group">
+                    <input type="text" class="todo-input" placeholder="Add a new task...">
+                    <button type="submit" class="add-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="16" />
+                            <line x1="8" y1="12" x2="16" y2="12" />
+                        </svg>
+                        Add Task
+                    </button>
+                </div>
+            </form>
+
+            <div class="todo-list">
+                <!-- Completed todo item -->
+                <div class="todo-item">
+                    <div class="todo-content">
+                        <div class="checkbox checked"></div>
+                        <span class="todo-text completed">Complete project presentation</span>
+                    </div>
+                    <button class="delete-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Uncompleted todo item -->
+                <div class="todo-item">
+                    <div class="todo-content">
+                        <div class="checkbox"></div>
+                        <span class="todo-text">Review team feedback</span>
+                    </div>
+                    <button class="delete-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
-
-        <footer class="footer">
-            <p>© 2024 My Awesome Guestbook • Made with 💖 • Best viewed in IE6 • Last updated: 03/15/2024</p>
-        </footer>
     </div>
 </body>
 </html>
