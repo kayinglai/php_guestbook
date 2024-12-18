@@ -5,6 +5,21 @@ $email = '';
 $message = '';
 $readyToStore = false;
 
+function connectToDB() {
+    // Create connection
+    $conn = new mysqli("localhost", "root", "", "guestbook");
+
+    // Check connection
+    if($conn->connect_error) {
+        return false;
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+    return $conn;
+}
+
+$conn = connectToDB();
+
 
 /*
     STORING A GUESTBOOK ENTRY
@@ -32,20 +47,7 @@ if( $_SERVER['REQUEST_METHOD'] === "POST" &&
     we connect and store the data
 */
 
-if($readyToStore) {
-
-    $servername= "localhost";
-    $username= "root";
-    $password= "";
-    $dbname= "guestbook";
-
-    // Create connection
-    $conn = new mysqli($servername, $username, $password, $dbname);
-
-    // Check connection
-    if($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
+if($readyToStore && $conn) {
     
     // Connected successfully, insert data
     // TODO: show a nice message, in case a post with a non-unique email was submititted
@@ -62,40 +64,33 @@ if($readyToStore) {
 
 
 /*
+    READING THE DATA
+
     Get the the guestbook entries from the database
+    and prepare them as HTML
 */
+    
+    if($conn) {
+        // get the data
+        $sql = "SELECT * FROM posts ORDER BY created_at DESC";
+        $result = $conn->query($sql);
+        $posts = "";
 
-    $servername= "localhost";
-    $username= "root";
-    $password= "";
-    $dbname= "guestbook";
-
-    // Create connection
-    $conn = new mysqli($servername, $username, $password, $dbname);
-
-    // Check connection
-    if($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
-
-    // get the data
-    $sql = "SELECT * FROM posts ORDER BY created_at DESC";
-    $result = $conn->query($sql);
-    $posts = "";
-
-    if($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            $posts .= '<div class="entry">
-                <div class="entry-header">
-                    <span class="entry-name">'.$row['name'].'</span>
-                    <span class="entry-date">2024-03-15</span>
-                </div>
-                <p class="entry-message">'.$row['message'].'</p>
-            </div>';
+        if($result->num_rows > 0) {
+            while($row = $result->fetch_assoc()) {
+                $posts .= '<div class="entry">
+                    <div class="entry-header">
+                        <span class="entry-name">'.$row['name'].'</span>
+                        <span class="entry-date">'.date('d M Y', strtotime($row['created_at'])).'</span>
+                    </div>
+                    <p class="entry-message">'.$row['message'].'</p>
+                </div>';
+            }
+        } else{
+            echo "0 results";
         }
-    } else{
-        echo "0 results";
     }
+
 ?>
 
 
