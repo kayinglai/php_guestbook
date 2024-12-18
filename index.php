@@ -5,6 +5,14 @@ $email = '';
 $message = '';
 $readyToStore = false;
 
+
+/*
+    STORING A GUESTBOOK ENTRY
+
+    Get input via POST
+    and prepare for Database
+*/
+
 if( $_SERVER['REQUEST_METHOD'] === "POST" &&
     isset($_POST['submit']) &&
     isset($_POST['name']) &&
@@ -18,6 +26,11 @@ if( $_SERVER['REQUEST_METHOD'] === "POST" &&
     $readyToStore = true;
 }
 
+
+/*
+    Once the input (name, message, email) is ready
+    we connect and store the data
+*/
 
 if($readyToStore) {
 
@@ -48,7 +61,41 @@ if($readyToStore) {
 }
 
 
+/*
+    Get the the guestbook entries from the database
+*/
 
+    $servername= "localhost";
+    $username= "root";
+    $password= "";
+    $dbname= "guestbook";
+
+    // Create connection
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    // Check connection
+    if($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+    // get the data
+    $sql = "SELECT * FROM posts ORDER BY created_at DESC";
+    $result = $conn->query($sql);
+    $posts = "";
+
+    if($result->num_rows > 0) {
+        while($row = $result->fetch_assoc()) {
+            $posts .= '<div class="entry">
+                <div class="entry-header">
+                    <span class="entry-name">'.$row['name'].'</span>
+                    <span class="entry-date">2024-03-15</span>
+                </div>
+                <p class="entry-message">'.$row['message'].'</p>
+            </div>';
+        }
+    } else{
+        echo "0 results";
+    }
 ?>
 
 
@@ -273,27 +320,7 @@ if($readyToStore) {
 
             <div class="entries-container">
                 <h2 class="entries-title">📝 Recent Visitors</h2>
-                <div class="entry">
-                    <div class="entry-header">
-                        <span class="entry-name">CoolDude2000</span>
-                        <span class="entry-date">2024-03-15</span>
-                    </div>
-                    <p class="entry-message">First time here! Love the retro vibes! 😊 Keep it up!</p>
-                </div>
-                <div class="entry">
-                    <div class="entry-header">
-                        <span class="entry-name">WebMaster99</span>
-                        <span class="entry-date">2024-03-14</span>
-                    </div>
-                    <p class="entry-message">Awesome guestbook! Reminds me of the good old days! 🌟 Visit my page too!</p>
-                </div>
-                <div class="entry">
-                    <div class="entry-header">
-                        <span class="entry-name">NetscapeFan</span>
-                        <span class="entry-date">2024-03-13</span>
-                    </div>
-                    <p class="entry-message">Cool website! Added to my bookmarks! ❤️ See you on IRC!</p>
-                </div>
+                <?= $posts ?>
             </div>
         </div>
 
